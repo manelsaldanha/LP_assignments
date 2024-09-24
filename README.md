@@ -1,5 +1,5 @@
 # Foundations Learning Path Assignments
-
+[![CI](https://github.com/manelsaldanha/LP_assignments/actions/workflows/ci.yml/badge.svg)](https://github.com/manelsaldanha/LP_assignments/actions/workflows/ci.yml)
 ## Introduction
 
 We are going to be using this project throughout the course.
