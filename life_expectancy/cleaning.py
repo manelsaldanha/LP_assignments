@@ -58,7 +58,7 @@ def clean_data(data: pd.DataFrame) -> pd.DataFrame:
     data = data.drop(columns=['unit,sex,age,geo\\time'])
 
     data = data.melt(id_vars=['unit', 'sex', 'age', 'region'], var_name='year', value_name='value')
-    
+
     # Removes any characters from the first whitespace to the end of each string
     data['value'] = data['value'].str.replace(r'\s.*$', '', regex=True)
 
