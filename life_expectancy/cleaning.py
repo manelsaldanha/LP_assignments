@@ -7,43 +7,93 @@ import pandas as pd
 
 PROJECT_DIR = Path(__file__).parents[0]
 
-def clean_data(region: str) -> None:
+def load_data() -> pd.DataFrame:
     """
-    This function cleans the data for the specified country.
-    :param country: The country code to filter the data (default is "PT").
+    Loads the raw life expectancy data from a TSV file and returns it as a DataFrame.
+
+    Returns:
+    pd.DataFrame: The loaded raw data.
     """
 
-    # Load the TSV file into a DataFrame
-    df = pd.read_csv(PROJECT_DIR / 'data' / "eu_life_expectancy_raw.tsv", sep='\t')
+    raw_data = pd.read_csv(PROJECT_DIR / 'data' / "eu_life_expectancy_raw.tsv", sep='\t')
 
-    # Split the first column into separate columns: 'unit', 'sex', 'age', 'region'
-    df[['unit', 'sex', 'age', 'region']] = df['unit,sex,age,geo\\time'].str.split(',', expand=True)
+    return raw_data
 
-    # Drop the original composed column
-    df = df.drop(columns=['unit,sex,age,geo\\time'])
+def save_data(cleaned_data: pd.DataFrame, region: str) -> None:
+    """
+    Saves the cleaned data for a specific region to a CSV file.
 
-    # Unpivot (melt) the dataframe to get 'year' and 'value' columns
-    df = df.melt(id_vars=['unit', 'sex', 'age', 'region'], var_name='year', value_name='value')
+    Parameters:
+    cleaned_data (pd.DataFrame): The cleaned data to be saved.
+    region (str): The country code used to filter and name the output file.
 
-    # Remove the values in the df 'value' column that as a ' e' suffix
-    df['value'] = df['value'].str.replace(r'\s.*$', '', regex=True)
+    Returns:
+    None
+    """
 
-    # Ensure the 'year' and 'value' columns have numeric values and clean it they dont
-    df[['year', 'value']] = df[['year', 'value']].apply(pd.to_numeric, errors='coerce')
+    data_filtered_by_region = cleaned_data[cleaned_data['region'] == region]
 
-    # Drop rows where either 'year' or 'value' are NaN
-    df = df.dropna(subset=['year', 'value'])
+    data_filtered_by_region.to_csv(
+        PROJECT_DIR / 'data' / f"{region.lower()}_life_expectancy.csv",
+        index=False
+    )
 
-    # Convert the 'year' column to an integer and 'value' to a float
-    df['year'] = df['year'].astype(int)
-    df['value'] = df['value'].astype(float)
 
-    final_df = df[df['region'] == region]
-    final_df.to_csv(PROJECT_DIR / 'data' / f"{region.lower()}_life_expectancy.csv", index=False)
+def clean_data(data: pd.DataFrame) -> pd.DataFrame:
+    """
+    Cleans the raw life expectancy data.
+
+    Parameters:
+    data (pd.DataFrame): The raw data to be cleaned.
+
+    Returns:
+    pd.DataFrame: The cleaned DataFrame ready for analysis.
+    """
+
+    # Clean data process
+    data[['unit', 'sex', 'age', 'region']] = (
+        data['unit,sex,age,geo\\time'].str.split(',', expand=True)
+    )
+
+    data = data.drop(columns=['unit,sex,age,geo\\time'])
+
+    data = data.melt(id_vars=['unit', 'sex', 'age', 'region'], var_name='year', value_name='value')
+
+    # Removes any characters from the first whitespace to the end of each string
+    data['value'] = data['value'].str.replace(r'\s.*$', '', regex=True)
+
+    data[['year', 'value']] = data[['year', 'value']].apply(pd.to_numeric, errors='coerce')
+
+    data = data.dropna(subset=['year', 'value'])
+
+    data['year'] = data['year'].astype(int)
+
+    data['value'] = data['value'].astype(float)
+
+    return data
+
+
+def main(region: str) -> None:
+    """
+    Orchestrates the data processing workflow. Loads raw life expectancy data,
+    cleans it, and saves the cleaned data for the specified region.
+
+    Parameters:
+    region (str): Country code for which to save the cleaned data. Default is 'PT'.
+
+    Returns:
+    None
+    """
+
+    data_raw = load_data()
+
+    cleaned_data = clean_data(data_raw)
+
+    save_data(cleaned_data, region)
 
 
 if __name__ == "__main__":  # pragma: no cover
-    # Initialize the argument parser
+
     parser = argparse.ArgumentParser(description="Clean data for a specific country.")
 
     # Add the country argument with a default value of "PT"
@@ -53,7 +103,6 @@ if __name__ == "__main__":  # pragma: no cover
         help="Specify the country code to clean data for. Default is 'PT'."
     )
 
-    # Parse command-line arguments
     args = parser.parse_args()
 
-    clean_data(args.country)
+    main(args.country)
