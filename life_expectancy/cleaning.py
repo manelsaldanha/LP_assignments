@@ -1,41 +1,10 @@
 """
 Data cleaning script used to clean the eu_life_expectancy_raw.tsv file.
 """
-from pathlib import Path
+from typing import Optional
 import argparse
 import pandas as pd
-
-PROJECT_DIR = Path(__file__).parents[0]
-
-def load_data() -> pd.DataFrame:
-    """
-    Loads the raw life expectancy data from a TSV file and returns it as a DataFrame.
-
-    Returns:
-    pd.DataFrame: The loaded raw data.
-    """
-    raw_data = pd.read_csv(PROJECT_DIR / 'data' / "eu_life_expectancy_raw.tsv", sep='\t')
-
-    return raw_data
-
-def save_data(cleaned_data: pd.DataFrame, region: str) -> None:
-    """
-    Saves the cleaned data for a specific region to a CSV file.
-
-    Parameters:
-    cleaned_data (pd.DataFrame): The cleaned data to be saved.
-    region (str): The country code used to filter and name the output file.
-
-    Returns:
-    None
-    """
-    data_filtered_by_region = cleaned_data[cleaned_data['region'] == region]
-
-    data_filtered_by_region.to_csv(
-        PROJECT_DIR / 'data' / f"{region.lower()}_life_expectancy.csv",
-        index=False
-    )
-
+from .data_process import load_data, save_data
 
 def clean_data(data: pd.DataFrame) -> pd.DataFrame:
     """
@@ -59,13 +28,13 @@ def clean_data(data: pd.DataFrame) -> pd.DataFrame:
     data['value'] = data['value'].str.replace(r'\s.*$', '', regex=True)
     data[['year', 'value']] = data[['year', 'value']].apply(pd.to_numeric, errors='coerce')
     data = data.dropna(subset=['year', 'value'])
-    data['year'] = data['year'].astype(int)
-    data['value'] = data['value'].astype(float)
+    data['year'] = data['year'].astype('int64')
+    data['value'] = data['value'].astype('float64')
 
     return data
 
 
-def main(region: str) -> None:
+def main(region: str, data_raw: Optional[pd.DataFrame] = None) -> pd.DataFrame:
     """
     Orchestrates the data processing workflow. Loads raw life expectancy data,
     cleans it, and saves the cleaned data for the specified region.
@@ -76,10 +45,14 @@ def main(region: str) -> None:
     Returns:
     None
     """
-    data_raw = load_data()
+    if data_raw is None:
+        data_raw = load_data()
+
     cleaned_data = clean_data(data_raw)
 
-    save_data(cleaned_data, region)
+    data_filtered_by_region = save_data(cleaned_data, region)
+
+    return data_filtered_by_region.reset_index(drop=True)
 
 
 if __name__ == "__main__":  # pragma: no cover
