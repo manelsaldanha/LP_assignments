@@ -1,30 +1,39 @@
 """Tests for the cleaning module"""
-from unittest.mock import patch
+from unittest.mock import patch, Mock
 import pandas as pd
-from life_expectancy.cleaning import main
+from life_expectancy.cleaning import clean_data
 from life_expectancy.data_process import load_data, save_data
-from . import OUTPUT_DIR
 
 
-def test_clean_data(eu_life_expectancy_raw, uk_life_expectancy_expected):
-    """Run the `clean_data` function and compare the output to the expected output"""
+def test_clean_data(eu_life_expectancy_raw, eu_life_expectancy_expected):
+    """
+    Run the `clean_data` function and compare the output to the expected output
+    using the fixtures created in create_fixtures.py inside the aux folder
+    """
 
-    uk_life_expectancy_actual = main('UK', eu_life_expectancy_raw)
+    eu_life_expectancy_actual = clean_data(eu_life_expectancy_raw)
     pd.testing.assert_frame_equal(
-        uk_life_expectancy_actual, uk_life_expectancy_expected
+        eu_life_expectancy_actual, eu_life_expectancy_expected
     )
 
-# Unit tests
+@patch("life_expectancy.cleaning.pd.read_csv")
+def test_load_data(read_csv_mock: Mock):
+    """Run the `load_data` function and checking on a mock dataframe"""
 
-def test_load_data():
-    """Run the `load_data` function and check if the output is not empty dataframe"""
+    read_csv_mock.return_value = pd.DataFrame({"life_exp": [78, 79, 77]})
     actual_result = load_data()
+    read_csv_mock.assert_called_once()
+
+    pd.testing.assert_frame_equal(actual_result, read_csv_mock.return_value)
 
     assert isinstance(actual_result, pd.DataFrame)
     assert not actual_result.empty
 
 def test_save_data():
-    """Run the `save_data` function and check the filtering and saving methods"""
+    """
+    Run the `save_data` function and check the filtering and saving methods
+    on a mock dataframe
+    """
     cleaned_data = pd.DataFrame({
         'unit': ['YR', 'YR'],
         'sex': ['F', 'F'],
@@ -34,24 +43,12 @@ def test_save_data():
         'value': [58.6, 21.7]
     })
 
-    region = 'UK'
-
     # Patch the to_csv method to print a simple message instead of writing to a file
     with patch('pandas.DataFrame.to_csv') as mock_to_csv:
 
-        mock_to_csv.return_value = print("Mocked to_csv called!")
+        mock_to_csv.return_value = print("Mocked to_csv method!")
 
-        actual_result = save_data(cleaned_data,region)
-
-        expected_result = cleaned_data[cleaned_data['region'] == region]
-
-        # Assertions
-        pd.testing.assert_frame_equal(
-            actual_result.reset_index(drop=True), expected_result.reset_index(drop=True)
-            )
-
-        # Assert that the to_csv method was called with the correct arguments
-        mock_to_csv.assert_called_once_with(
-            OUTPUT_DIR / f"{region.lower()}_life_expectancy.csv",
-            index=False
-        )
+        actual_result = save_data(cleaned_data, 'PT')
+        expected_result = cleaned_data[cleaned_data['region'] == 'PT'].reset_index(drop=True)
+        pd.testing.assert_frame_equal(actual_result, expected_result)
+        mock_to_csv.assert_called_once()

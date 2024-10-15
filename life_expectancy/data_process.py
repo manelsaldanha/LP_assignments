@@ -26,7 +26,7 @@ def save_data(cleaned_data: pd.DataFrame, region: str) -> pd.DataFrame:
     Returns:
     None
     """
-    data_filtered_by_region = cleaned_data[cleaned_data['region'] == region]
+    data_filtered_by_region = cleaned_data[cleaned_data['region'] == region].reset_index(drop=True)
 
     data_filtered_by_region.to_csv(
         PROJECT_DIR / 'data' / f"{region.lower()}_life_expectancy.csv",
