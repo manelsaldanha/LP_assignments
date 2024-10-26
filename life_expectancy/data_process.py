@@ -1,6 +1,7 @@
 """Loading and Saving Functions"""
 from pathlib import Path
 import pandas as pd
+from .region_enum import Region
 
 PROJECT_DIR = Path(__file__).parents[0]
 
@@ -15,7 +16,7 @@ def load_data() -> pd.DataFrame:
 
     return raw_data
 
-def save_data(cleaned_data: pd.DataFrame, region: str) -> pd.DataFrame:
+def save_data(cleaned_data: pd.DataFrame, region: Region) -> pd.DataFrame:
     """
     Saves the cleaned data for a specific region to a CSV file.
 
@@ -26,10 +27,11 @@ def save_data(cleaned_data: pd.DataFrame, region: str) -> pd.DataFrame:
     Returns:
     None
     """
-    data_filtered_by_region = cleaned_data[cleaned_data['region'] == region].reset_index(drop=True)
+    data_filtered_by_region = cleaned_data[cleaned_data['region'] == region.value] \
+        .reset_index(drop=True)
 
     data_filtered_by_region.to_csv(
-        PROJECT_DIR / 'data' / f"{region.lower()}_life_expectancy.csv",
+        PROJECT_DIR / 'data' / f"{region.value.lower()}_life_expectancy.csv",
         index=False
     )
 
