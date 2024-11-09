@@ -1,27 +1,27 @@
 """Tests for the cleaning module"""
 from unittest.mock import patch, Mock
 import pandas as pd
-from life_expectancy.cleaning import clean_data
-from life_expectancy.data_process import load_data, save_data
+from life_expectancy.cleaning import clean_data, clean_json_strategy
+from life_expectancy.data_process import load_data, save_data, load_json_strategy
 from life_expectancy.region_enum import Region
 
-def test_clean_data(eu_life_expectancy_raw, eu_life_expectancy_expected):
+def test_clean_data(eurostat_life_expect_raw, eurostat_life_expect_expected):
     """
     Run the `clean_data` function and compare the output to the expected output
     using the fixtures created in create_fixtures.py inside the aux folder
     """
 
-    eu_life_expectancy_actual = clean_data(eu_life_expectancy_raw)
+    eu_life_expectancy_actual = clean_data(eurostat_life_expect_raw, clean_json_strategy)
     pd.testing.assert_frame_equal(
-        eu_life_expectancy_actual, eu_life_expectancy_expected
+        eu_life_expectancy_actual, eurostat_life_expect_expected
     )
 
-@patch("life_expectancy.cleaning.pd.read_csv")
+@patch("life_expectancy.data_process.pd.read_json")
 def test_load_data(read_csv_mock: Mock):
     """Run the `load_data` function and checking on a mock dataframe"""
 
     read_csv_mock.return_value = pd.DataFrame({"life_exp": [78, 79, 77]})
-    actual_result = load_data()
+    actual_result = load_data(load_json_strategy)
     read_csv_mock.assert_called_once()
 
     pd.testing.assert_frame_equal(actual_result, read_csv_mock.return_value)

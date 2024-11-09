@@ -2,19 +2,36 @@
 Data cleaning script used to clean the eu_life_expectancy_raw.tsv file.
 """
 import argparse
+from typing import Callable
 import pandas as pd
-from .data_process import load_data, save_data
+from .data_process import load_data, load_tsv_strategy, save_data
 from .region_enum import Region
 
-def clean_data(data: pd.DataFrame) -> pd.DataFrame:
+FileCleaningStrategy = Callable[[pd.DataFrame], pd.DataFrame]
+
+def clean_json_strategy(data: pd.DataFrame) -> pd.DataFrame:
     """
-    Cleans the raw life expectancy data.
+    Cleans data loaded from a JSON file.
 
     Parameters:
-    data (pd.DataFrame): The raw data to be cleaned.
+    data (pd.DataFrame): Raw JSON data to be cleaned.
 
     Returns:
-    pd.DataFrame: The cleaned DataFrame ready for analysis.
+    pd.DataFrame: Cleaned DataFrame with renamed columns.
+    """
+    data = data.drop(columns=["flag", "flag_detail"])
+    data = data.rename(columns={"country": "region", "life_expectancy": "value"})
+    return data
+
+def clean_tsv_strategy(data: pd.DataFrame) -> pd.DataFrame:
+    """
+    Cleans data loaded from a TSV file containing life expectancy information.
+
+    Parameters:
+    data (pd.DataFrame): Raw TSV data to be cleaned.
+
+    Returns:
+    pd.DataFrame: Cleaned DataFrame with structured columns and numeric values.
     """
     # Clean data process
     data[['unit', 'sex', 'age', 'region']] = (
@@ -33,6 +50,19 @@ def clean_data(data: pd.DataFrame) -> pd.DataFrame:
 
     return data.reset_index(drop=True)
 
+def clean_data(data: pd.DataFrame, cleaning_strategy: FileCleaningStrategy) -> pd.DataFrame:
+    """
+    Applies a specified cleaning strategy to the data.
+
+    Parameters:
+    data (pd.DataFrame): The raw data to be cleaned.
+    cleaning_strategy (FileCleaningStrategy): The function to apply for cleaning.
+
+    Returns:
+    pd.DataFrame: Cleaned data.
+    """
+    return cleaning_strategy(data)
+
 
 def main(region: Region) -> None:
     """
@@ -45,8 +75,8 @@ def main(region: Region) -> None:
     Returns:
     None
     """
-    data_raw = load_data()
-    cleaned_data = clean_data(data_raw)
+    data_raw = load_data(load_tsv_strategy)
+    cleaned_data = clean_data(data_raw, clean_tsv_strategy)
 
     save_data(cleaned_data, region)
 
