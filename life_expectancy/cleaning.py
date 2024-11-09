@@ -4,6 +4,7 @@ Data cleaning script used to clean the eu_life_expectancy_raw.tsv file.
 import argparse
 import pandas as pd
 from .data_process import load_data, save_data
+from .region_enum import Region
 
 def clean_data(data: pd.DataFrame) -> pd.DataFrame:
     """
@@ -33,7 +34,7 @@ def clean_data(data: pd.DataFrame) -> pd.DataFrame:
     return data.reset_index(drop=True)
 
 
-def main(region: str) -> None:
+def main(region: Region) -> None:
     """
     Orchestrates the data processing workflow. Loads raw life expectancy data,
     cleans it, and saves the cleaned data for the specified region.
@@ -62,4 +63,4 @@ if __name__ == "__main__":  # pragma: no cover
     )
     args = parser.parse_args()
 
-    main(args.country)
+    main(Region[args.country])

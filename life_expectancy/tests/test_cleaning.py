@@ -3,7 +3,7 @@ from unittest.mock import patch, Mock
 import pandas as pd
 from life_expectancy.cleaning import clean_data
 from life_expectancy.data_process import load_data, save_data
-
+from life_expectancy.region_enum import Region
 
 def test_clean_data(eu_life_expectancy_raw, eu_life_expectancy_expected):
     """
@@ -48,7 +48,24 @@ def test_save_data():
 
         mock_to_csv.return_value = print("Mocked to_csv method!")
 
-        actual_result = save_data(cleaned_data, 'PT')
-        expected_result = cleaned_data[cleaned_data['region'] == 'PT'].reset_index(drop=True)
+        actual_result = save_data(cleaned_data, Region.PT)
+        expected_result = cleaned_data[cleaned_data['region'] == Region.PT.value] \
+            .reset_index(drop=True)
         pd.testing.assert_frame_equal(actual_result, expected_result)
         mock_to_csv.assert_called_once()
+
+def test_actual_countries():
+    """
+    Test that `actual_countries` method in Region enum returns only the country codes,
+    excluding unions and regions.
+    """
+    actual_countries = Region.actual_countries()
+    expected_countries = [
+        'AL', 'AM', 'AT', 'AZ', 'BE', 'BG', 'BY', 'CH', 'CY', 'CZ', 'DE', 
+        'DK', 'EE', 'EL', 'ES', 'FI', 'FR', 'FX', 'GE', 'HR', 'HU', 'IE', 
+        'IS', 'IT', 'LI', 'LT', 'LU', 'LV', 'MD', 'ME', 'MK', 'MT', 'NL', 
+        'NO', 'PL', 'PT', 'RO', 'RS', 'RU', 'SE', 'SI', 'SK', 'SM', 'TR', 
+        'UA', 'UK', 'XK'
+    ]
+
+    assert sorted(actual_countries) == sorted(expected_countries)
