@@ -4,7 +4,7 @@ Data cleaning script used to clean the eu_life_expectancy_raw.tsv file.
 import argparse
 from typing import Callable
 import pandas as pd
-from .data_process import load_data, load_tsv_strategy, save_data
+from .data_process import load_data, load_json_strategy, save_data
 from .region_enum import Region
 
 FileCleaningStrategy = Callable[[pd.DataFrame], pd.DataFrame]
@@ -75,8 +75,8 @@ def main(region: Region) -> None:
     Returns:
     None
     """
-    data_raw = load_data(load_tsv_strategy)
-    cleaned_data = clean_data(data_raw, clean_tsv_strategy)
+    data_raw = load_data(load_json_strategy)
+    cleaned_data = clean_data(data_raw, clean_json_strategy)
 
     save_data(cleaned_data, region)
 
