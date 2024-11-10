@@ -1,27 +1,52 @@
 """Tests for the cleaning module"""
 from unittest.mock import patch, Mock
 import pandas as pd
-from life_expectancy.cleaning import clean_data
-from life_expectancy.data_process import load_data, save_data
+from life_expectancy.cleaning import clean_data, clean_json_strategy, clean_tsv_strategy, main
+from life_expectancy.data_process import load_data, save_data, load_json_strategy, load_tsv_strategy
 from life_expectancy.region_enum import Region
 
-def test_clean_data(eu_life_expectancy_raw, eu_life_expectancy_expected):
+
+def test_clean_data_json_strategy(eurostat_life_expect_raw, eurostat_life_expect_expected):
     """
     Run the `clean_data` function and compare the output to the expected output
     using the fixtures created in create_fixtures.py inside the aux folder
     """
 
-    eu_life_expectancy_actual = clean_data(eu_life_expectancy_raw)
+    eu_life_expectancy_actual = clean_data(eurostat_life_expect_raw, clean_json_strategy)
+    pd.testing.assert_frame_equal(
+        eu_life_expectancy_actual, eurostat_life_expect_expected
+    )
+
+def test_clean_data_tsv_strategy(eu_life_expectancy_raw, eu_life_expectancy_expected):
+    """
+    Run the `clean_data` function and compare the output to the expected output
+    using the fixtures created in create_fixtures.py inside the aux folder
+    """
+
+    eu_life_expectancy_actual = clean_data(eu_life_expectancy_raw, clean_tsv_strategy)
     pd.testing.assert_frame_equal(
         eu_life_expectancy_actual, eu_life_expectancy_expected
     )
 
-@patch("life_expectancy.cleaning.pd.read_csv")
-def test_load_data(read_csv_mock: Mock):
+@patch("life_expectancy.data_process.pd.read_json")
+def test_load_data_json_strategy(read_json_mock: Mock):
+    """Run the `load_data` function and checking on a mock dataframe"""
+
+    read_json_mock.return_value = pd.DataFrame({"life_exp": [78, 79, 77]})
+    actual_result = load_data(load_json_strategy)
+    read_json_mock.assert_called_once()
+
+    pd.testing.assert_frame_equal(actual_result, read_json_mock.return_value)
+
+    assert isinstance(actual_result, pd.DataFrame)
+    assert not actual_result.empty
+
+@patch("life_expectancy.data_process.pd.read_csv")
+def test_load_data_tsv_strategy(read_csv_mock: Mock):
     """Run the `load_data` function and checking on a mock dataframe"""
 
     read_csv_mock.return_value = pd.DataFrame({"life_exp": [78, 79, 77]})
-    actual_result = load_data()
+    actual_result = load_data(load_tsv_strategy)
     read_csv_mock.assert_called_once()
 
     pd.testing.assert_frame_equal(actual_result, read_csv_mock.return_value)
@@ -69,3 +94,26 @@ def test_actual_countries():
     ]
 
     assert sorted(actual_countries) == sorted(expected_countries)
+
+# Integration test on main with json strategy approach
+@patch('life_expectancy.cleaning.load_data')
+@patch('life_expectancy.cleaning.save_data')
+def test_main_integration(
+    mock_save_data: Mock,
+    mock_load_data: Mock,
+    eurostat_life_expect_raw,
+    eurostat_life_expect_expected
+):
+    """
+    This integration test mocks the `life_expectancy.cleaning.load_data` and
+    `life_expectancy.cleaning.save_data` functions to verify that the `main` function
+    calls them correctly and produces the expected output.
+    """
+    mock_load_data.return_value = eurostat_life_expect_raw
+    mock_save_data.return_value = eurostat_life_expect_expected
+
+    actual_result = main(Region.PT)
+    mock_load_data.assert_called_once()
+    mock_save_data.assert_called_once()
+
+    pd.testing.assert_frame_equal(actual_result, eurostat_life_expect_expected)
