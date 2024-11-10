@@ -48,7 +48,7 @@ def save_data(cleaned_data: pd.DataFrame, region: Region) -> pd.DataFrame:
     region (str): The country code used to filter and name the output file.
 
     Returns:
-    None
+    pd.DataFrame: The data filtered by region as a DataFrame
     """
     data_filtered_by_region = cleaned_data[cleaned_data['region'] == region.value] \
         .reset_index(drop=True)

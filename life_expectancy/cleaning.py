@@ -64,7 +64,7 @@ def clean_data(data: pd.DataFrame, cleaning_strategy: FileCleaningStrategy) -> p
     return cleaning_strategy(data)
 
 
-def main(region: Region) -> None:
+def main(region: Region) -> pd.DataFrame:
     """
     Orchestrates the data processing workflow. Loads raw life expectancy data,
     cleans it, and saves the cleaned data for the specified region.
@@ -77,8 +77,9 @@ def main(region: Region) -> None:
     """
     data_raw = load_data(load_json_strategy)
     cleaned_data = clean_data(data_raw, clean_json_strategy)
+    cleaned_data_filtered_by_region = save_data(cleaned_data, region)
 
-    save_data(cleaned_data, region)
+    return cleaned_data_filtered_by_region
 
 
 if __name__ == "__main__":  # pragma: no cover
